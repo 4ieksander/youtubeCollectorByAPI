@@ -58,3 +58,11 @@ def block_user(user_id, duration_minutes):
     c.execute("UPDATE users SET blocked_until=? WHERE id=?", (blocked_until, user_id))
     conn.commit()
     conn.close()
+
+def get_all_users():
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("SELECT * FROM users")
+    users = c.fetchall()
+    conn.close()
+    return users
