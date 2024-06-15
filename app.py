@@ -335,6 +335,10 @@ class App:
 
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = App(root)
-    root.mainloop()
+    try:
+        root = tk.Tk()
+        app = App(root)
+        root.mainloop()
+    except KeyboardInterrupt:
+        messagebox.showinfo("Koniec dzialania aplikacji", "Program zostal przerwany przez uzytkownika")
+        exit(0)

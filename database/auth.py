@@ -41,9 +41,11 @@ def login_user(username, password):
         c.execute("SELECT * FROM users WHERE username=?", (username,))
 
     user = c.fetchone()
-
-    if user and user[4] and datetime.strptime(user[4], "%Y-%m-%d %H:%M:%S") > datetime.now():
-        return None  # user is blocked
+    try:
+        if user and user[4] and datetime.strptime(user[4], "%Y-%m-%d %H:%M:%S") > datetime.now():
+            return None  # user is blocked
+    except TypeError:
+        pass
 
     if user and user[2] == hashed_password:
         return user
