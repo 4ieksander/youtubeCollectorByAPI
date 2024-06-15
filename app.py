@@ -99,10 +99,28 @@ class App:
         self.clear_frame(self.login_frame)
         self.clear_frame(self.admin_frame)
 
-        self.admin_frame = tk.Frame(self.root)
-        self.admin_frame.pack(padx=10, pady=10)
+        self.admin_window = tk.Toplevel(self.root)
+        self.admin_window.title("Panel administratora")
+        self.admin_window.geometry("950x600")
 
-        tk.Label(self.admin_frame, text="Panel administratora").pack()
+        tk.Label(self.admin_window, text="Panel administratora").pack(pady=10)
+
+        canvas = tk.Canvas(self.admin_window)
+        scrollbar_y = tk.Scrollbar(self.admin_window, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas)
+
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(
+                scrollregion=canvas.bbox("all")
+            )
+        )
+
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar_y.set)
+
+        scrollbar_y.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
 
         all_users = get_all_users()
         all_movies = get_all_movies()
@@ -119,36 +137,33 @@ class App:
                 blocked_until = ""
 
             user_info = f"{user[1]} (id: {user[0]}) - Filmy: {len(user_movies)}{blocked_until}"
-            tk.Label(self.admin_frame, text=user_info).pack()
+            tk.Label(scrollable_frame, text=user_info).pack(anchor="w", padx=10)
 
-            tk.Button(self.admin_frame, text="Zablokuj na 5 minut",
-                      command=lambda u=user[0]: self.block_user(u)).pack()
+            tk.Button(scrollable_frame, text="Zablokuj na 5 minut",
+                      command=lambda u=user[0]: self.block_user(u)).pack(anchor="w", padx=10, pady=(0, 10))
 
-            movies_tree = ttk.Treeview(self.admin_frame,
-                                       columns=("id", "title", "published_at", "views", "likes"),
+            movies_tree = ttk.Treeview(scrollable_frame,
+                                       columns=("id", "title", "published_at", "views", "likes", "delete"),
                                        show='headings')
             movies_tree.heading("id", text="ID")
-            movies_tree.column("id", width=30)
+            movies_tree.column("id", width=50)
             movies_tree.heading("title", text="Tytuł")
             movies_tree.heading("published_at", text="Data publikacji")
             movies_tree.heading("views", text="Wyświetlenia")
             movies_tree.heading("likes", text="Polubienia")
-            movies_tree.pack()
+            movies_tree.heading("delete", text="Usuń")
+            movies_tree.column("delete", width=50, anchor='center')
+
+            movies_tree.pack(fill="both", expand=True, padx=10, pady=(0, 10))
 
             for movie in user_movies:
-                movies_tree.insert("", "end", values=(movie[0], movie[1], movie[2], movie[3], movie[4]))
+                movies_tree.insert("", "end", values=(movie[0], movie[1], movie[2], movie[3], movie[4], "Usuń"))
 
-            movies_tree.bind("<Double-1>", lambda event, tree=movies_tree: self.handle_admin_delete_click(event, tree))
-
-    def clear_frame(self, frame):
-        if frame:
-            for widget in frame.winfo_children():
-                widget.destroy()
+            movies_tree.bind("<Button-1>", lambda event, tree=movies_tree: self.handle_admin_delete_click(event, tree))
 
     def handle_admin_delete_click(self, event, tree):
         item_id = tree.identify_row(event.y)
         column = tree.identify_column(event.x)
-
         if column == "#6":  # Column 6 is for delete button
             movie_id = tree.item(item_id)["values"][0]
             self.delete_movie_admin(movie_id)
@@ -158,6 +173,10 @@ class App:
         messagebox.showinfo("Sukces", "Film usunięty")
         self.show_admin_view()
 
+    def clear_frame(self, frame):
+        if frame:
+            for widget in frame.winfo_children():
+                widget.destroy()
     def block_user(self, user_id):
         block_user(user_id, 5)
         messagebox.showinfo("Sukces", "Użytkownik zablokowany na 5 minut")
@@ -212,8 +231,9 @@ class App:
             column = self.movies_tree.identify_column(event.x)
             if column == "#6":
                 movie_id = self.movies_tree.item(row_id)["values"][0]
-                self.delete_movie_user(movie_id)
-
+                if self.admin_window:
+                    self.admin_window.destroy()
+                self.show_admin_view()
     def delete_movie_user(self, movie_id):
         delete_movie(movie_id)
         messagebox.showinfo("Sukces", "Film usunięty")
