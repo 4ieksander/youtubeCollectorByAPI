@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "api-youtube-smart-open"
+version = "0.1.0"
+description = ""
+authors = ["AleksanderOkrasa <95458102+AleksanderOkrasa@users.noreply.github.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+google-api-python-client = "^2.133.0"
+pandas = "^2.2.2"
+pytz = "^2024.1"
+requests = "^2.32.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
