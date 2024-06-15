@@ -33,8 +33,11 @@ class App:
             API_KEY = file.read().strip()
         self.youtube = build('youtube', 'v3', developerKey=API_KEY)
         self.user_frame = tk.Frame(root)
+        self.admin_frame = tk.Frame(root)
         self.movies_tree = None
 
+
+    # Authentication methods
     def login(self):
         username = self.username_entry.get()
         password = self.password_entry.get()
@@ -87,23 +90,82 @@ class App:
         self.register_frame.pack_forget()
         self.login_frame.pack(padx=10, pady=10)
 
+
+
+    # Admin views and methods
     def show_admin_view(self):
-        self.login_frame.pack_forget()
-        self.register_frame.pack_forget()
-        admin_frame = tk.Frame(self.root)
-        admin_frame.pack(padx=10, pady=10)
-        tk.Label(admin_frame, text="Panel administratora").pack()
+        self.clear_frame(self.user_frame)
+        self.clear_frame(self.register_frame)
+        self.clear_frame(self.login_frame)
+        self.clear_frame(self.admin_frame)
 
-        movies = get_all_movies()
-        for movie in movies:
-            tk.Label(admin_frame, text=f"{movie[1]} (id: {movie[0]})").pack()
-            tk.Button(admin_frame, text="Usuń", command=lambda m=movie[0]: self.delete_movie(m)).pack()
+        self.admin_frame = tk.Frame(self.root)
+        self.admin_frame.pack(padx=10, pady=10)
 
-        tk.Label(admin_frame, text="Użytkownicy:").pack()
-        for user in self.get_all_users():
-            tk.Label(admin_frame, text=f"{user[1]} (id: {user[0]})").pack()
-            tk.Button(admin_frame, text="Zablokuj na 5 minut", command=lambda u=user[0]: self.block_user(u)).pack()
+        tk.Label(self.admin_frame, text="Panel administratora").pack()
 
+        all_users = get_all_users()
+        all_movies = get_all_movies()
+
+        for user in all_users:
+            if user[3] == 'admin':
+                continue
+
+            user_movies = [movie for movie in all_movies if movie[5] == user[0]]
+
+            if user[4]:
+                blocked_until = f" (Zablokowany do: {user[4]})"
+            else:
+                blocked_until = ""
+
+            user_info = f"{user[1]} (id: {user[0]}) - Filmy: {len(user_movies)}{blocked_until}"
+            tk.Label(self.admin_frame, text=user_info).pack()
+
+            tk.Button(self.admin_frame, text="Zablokuj na 5 minut",
+                      command=lambda u=user[0]: self.block_user(u)).pack()
+
+            movies_tree = ttk.Treeview(self.admin_frame,
+                                       columns=("id", "title", "published_at", "views", "likes"),
+                                       show='headings')
+            movies_tree.heading("id", text="ID")
+            movies_tree.column("id", width=30)
+            movies_tree.heading("title", text="Tytuł")
+            movies_tree.heading("published_at", text="Data publikacji")
+            movies_tree.heading("views", text="Wyświetlenia")
+            movies_tree.heading("likes", text="Polubienia")
+            movies_tree.pack()
+
+            for movie in user_movies:
+                movies_tree.insert("", "end", values=(movie[0], movie[1], movie[2], movie[3], movie[4]))
+
+            movies_tree.bind("<Double-1>", lambda event, tree=movies_tree: self.handle_admin_delete_click(event, tree))
+
+    def clear_frame(self, frame):
+        if frame:
+            for widget in frame.winfo_children():
+                widget.destroy()
+
+    def handle_admin_delete_click(self, event, tree):
+        item_id = tree.identify_row(event.y)
+        column = tree.identify_column(event.x)
+
+        if column == "#6":  # Column 6 is for delete button
+            movie_id = tree.item(item_id)["values"][0]
+            self.delete_movie_admin(movie_id)
+
+    def delete_movie_admin(self, movie_id):
+        delete_movie(movie_id)
+        messagebox.showinfo("Sukces", "Film usunięty")
+        self.show_admin_view()
+
+    def block_user(self, user_id):
+        block_user(user_id, 5)
+        messagebox.showinfo("Sukces", "Użytkownik zablokowany na 5 minut")
+        self.show_admin_view()
+
+
+
+    # User views and methods
     def show_user_view(self):
         self.login_frame.pack_forget()
         self.register_frame.pack_forget()
@@ -152,6 +214,12 @@ class App:
                 movie_id = self.movies_tree.item(row_id)["values"][0]
                 self.delete_movie_user(movie_id)
 
+    def delete_movie_user(self, movie_id):
+        delete_movie(movie_id)
+        messagebox.showinfo("Sukces", "Film usunięty")
+        self.show_user_view()
+
+
     def show_add_movie(self):
         add_movie_frame = tk.Toplevel(self.root)
         tk.Label(add_movie_frame, text="Adres URL do filmu (nie playlisty!)").pack()
@@ -186,17 +254,9 @@ class App:
 
         self.show_user_view()
 
-    def delete_movie(self, movie_id):
-        delete_movie(movie_id)
-        messagebox.showinfo("Sukces", "Film usunięty")
-        self.show_admin_view()
 
 
-    def delete_movie_user(self, movie_id):
-        delete_movie(movie_id)
-        messagebox.showinfo("Sukces", "Film usunięty")
-        self.show_user_view()
-
+    # Sorting and filtering methods
     def sort_movies(self):
         sort_window = tk.Toplevel(self.root)
         sort_window.title("Sortowanie filmów")
@@ -271,10 +331,6 @@ class App:
         self.movies_tree.bind("<Button-1>", self.handle_delete_click)
 
 
-    def block_user(self, user_id):
-        block_user(user_id, 5)
-        messagebox.showinfo("Sukces", "Użytkownik zablokowany na 5 minut")
-        self.show_admin_view()
 
 
 
