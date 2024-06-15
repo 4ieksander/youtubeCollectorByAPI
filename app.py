@@ -342,3 +342,5 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         messagebox.showinfo("Koniec dzialania aplikacji", "Program zostal przerwany przez uzytkownika")
         exit(0)
+    except Exception as e:
+        messagebox.showerror("Blad", f"Wystapil blad: {e}, kontynuuje program")

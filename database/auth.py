@@ -44,8 +44,8 @@ def login_user(username, password):
     try:
         if user and user[4] and datetime.strptime(user[4], "%Y-%m-%d %H:%M:%S") > datetime.now():
             return None  # user is blocked
-    except TypeError:
-        pass
+    except (ValueError, IndexError, TypeError) as e:
+        print(f"An error occurred: {e}")
 
     if user and user[2] == hashed_password:
         return user
