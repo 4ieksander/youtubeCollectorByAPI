@@ -3,6 +3,8 @@ import pandas as pd
 from googleapiclient.discovery import build
 
 # Set up API credentials
+with open("api_key.txt", "r") as f:
+    API_KEY = f.read().strip()
 youtube = build('youtube', 'v3', developerKey=API_KEY)
 
 database = []
@@ -23,6 +25,7 @@ def add_video():
         "views": int(video_info["statistics"]["viewCount"]),
         "likes": int(video_info["statistics"]["likeCount"]),
     }
+    print(type(video_info["snippet"]["publishedAt"]))
     database.append(video_data)
     print("Video added successfully!")
 
